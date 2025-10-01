@@ -35,7 +35,7 @@ export default function createDeployMiddleware(options = {}) {
     return router;
 }
 
-function uptime(_, res, _) {
+function uptime(req, res, next) {
     const uptime = process.uptime();
     res.json({ uptime });
 }

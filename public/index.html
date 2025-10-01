@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Deploy ${config.serviceName}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.7.14/vue.min.js"></script>
+    <style>
+        .container-small {
+            max-width: 500px;
+        }
+        pre {
+            max-height: 250px;
+        }
+    </style>
+</head>
+<body>
+<div id="deploy">
+    <div class="container container-small my-5">
+        <div class="d-flex justify-content-between">
+            <h1>Deploy</h1>
+            <div>
+                <a href="javascript:location.reload()" class="btn btn-outline-dark">
+                    <i class="fas fa-sync-alt"></i>
+                    Deploy again
+                </a>
+            </div>
+        </div>
+        <div v-if="!triggered">
+            <div class="mb-3">
+                <label for="gitUsername">Git username</label>
+                <input type="text" class="form-control" id="gitUsername" v-model="username">
+            </div>
+            <div class="mb-3">
+                <label for="gitAccessToken">Git access token</label>
+                <input type="password" class="form-control" id="gitAccessToken" v-model="accessToken">
+            </div>
+
+            <button class="btn btn-success" @click="startDeploy">
+                <i class="fas fa-rocket"></i>
+                Deploy
+            </button>
+        </div>
+        <div v-if="triggered">
+            <div class="d-flex mb-3">
+                <div v-if="!step1.loading && step1.success">
+                    <i class="fa-solid fa-circle-check text-success fa-2x"></i>
+                </div>
+                <div v-if="!step1.loading && !step1.success">
+                    <i class="fa-solid fa-circle-xmark text-danger fa-2x"></i>
+                </div>
+                <div v-if="step1.loading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+
+                <h2 class="ml-2">Step 1: Pull from Git</h2>
+            </div>
+            <div v-if="!step1.loading">
+                <div v-if="step1.success" class="alert alert-success" role="alert">
+                    <h4 class="alert-heading">Deployment successful</h4>
+                    <pre class="mb-0">{{ step1.stdout }}</pre>
+                </div>
+                <div v-if="!step1.success" class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">Deployment failed</h4>
+                    <pre class="mb-0">{{ step1.stdout }}</pre>
+                </div>
+            </div>
+
+            <div class="d-flex mb-3">
+                <div v-if="!step2.loading && step2.success">
+                    <i class="fa-solid fa-circle-check text-success fa-2x"></i>
+                </div>
+                <div v-if="!step2.loading && !step2.success">
+                    <i class="fa-solid fa-circle-xmark text-danger fa-2x"></i>
+                </div>
+                <div v-if="step2.loading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+
+                <h2 class="ml-2">Step 2: Restart</h2>
+            </div>
+            <div v-if="!step2.loading">
+                <div v-if="step2.success" class="alert alert-success" role="alert">
+                    <h4 class="alert-heading">Success!</h4>
+                    <p>Restart was successful.</p>
+                </div>
+                <div v-if="!step2.success" class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">Error!</h4>
+                    <p class="mb-0">Restart failed.</p>
+                </div>
+            </div>
+            <pre v-if="step2.output">{{ step2.output }}</pre>
+
+
+            <div class="mb-3">
+                <a href="javascript:location.reload()" class="btn btn-outline-dark">
+                    <i class="fas fa-sync-alt"></i>
+                    Deploy again
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+new Vue({
+    el: '#deploy',
+    data: {
+        username: '',
+        accessToken: '',
+        triggered: false,
+        step1: {
+            loading: true,
+            success: false,
+            stdout: '',
+        },
+        step2: {
+            loading: false,
+            success: false,
+            output: '',
+        }
+    },
+    methods: {
+        startDeploy() {
+            this.triggered = true;
+            this.step1.loading = true;
+
+            fetch('/_deploy', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    gitUsername: this.username,
+                    gitAccessToken: this.accessToken,
+                }),
+            })
+            .then(response => response.json())
+            .then(res => {
+                this.step1.loading = false;
+                this.step1.success = res.success;
+                this.step1.stdout = res.stdout;
+
+                this.runHealthcheck();
+            })
+            .catch(err => {
+                this.step1.loading = false;
+                this.step1.success = false;
+                this.step1.stdout = err.toString();
+
+                this.runHealthcheck();
+            });
+        },
+        runHealthcheck(retryCount = 0) {
+            this.step2.loading = true;
+
+            fetch('/_deploy/uptime')
+                .then(response => response.json())
+                .then(res => {
+                    console.log("uptime", res);
+                    if (res.uptime < 15) {
+                        this.step2.loading = false;
+                        this.step2.success = true;
+                        this.step2.output = res;
+                    } else {
+                        this.step2.loading = false;
+                        this.step2.success = false;
+                        this.step2.output = "Uptime is too high: " + res.uptime;
+                        throw new Error("Uptime is too high"); // So that we can retry
+                    }
+                })
+                .catch(err => {
+                    if (retryCount < 25) {
+                        setTimeout(() => {
+                            this.runHealthcheck(retryCount + 1);
+                        }, 1000);
+                        this.step2.output = this.step2.output + "\n" + err.toString();
+                    } else {
+                        this.step2.loading = false;
+                        this.step2.success = false;
+                        this.step2.output = JSON.stringify(err, null, 2);
+                    }
+                });
+        }
+    }
+});
+</script>
+
+</body>
+</html>

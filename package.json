@@ -1,0 +1,19 @@
+{
+  "name": "@kiza/deploy",
+  "version": "1.0.0",
+  "description": "Express deploy page",
+  "main": "deploy.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/K1Z4/Deploy.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/K1Z4/Deploy/issues"
+  },
+  "homepage": "https://github.com/K1Z4/Deploy#readme"
+}

@@ -40,7 +40,7 @@ function uptime(req, res, next) {
     res.json({ uptime });
 }
 
-async function deploy(config) {
+function deploy(config) {
     return async (req, res, next) => {
         try {
             const username = req.body.gitUsername;

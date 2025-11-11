@@ -2,6 +2,7 @@ import util from 'util';
 import { exec } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { renderTemplate, validateRootPath } from './util/templating.js';
 
 const execAsync = util.promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
@@ -10,6 +11,7 @@ const __dirname = path.dirname(__filename);
 export default function createDeployMiddleware(options = {}) {
     const config = {
         express: options.express,
+        rootPath: options.rootPath || '/deploy',
         serviceName: options.serviceName,
         includeDev: options.includeDev || false,
         runBuild: options.runBuild || false,
@@ -25,12 +27,24 @@ export default function createDeployMiddleware(options = {}) {
         throw new Error('options.serviceName is required.');
     }
 
+    validateRootPath(config.rootPath);
+
     const router = config.express.Router();
 
-    router.use('/', config.express.static(path.join(__dirname, 'public')));
+    // Serve the main deploy page with dynamic template
+    router.get('/', async (req, res) => {
+        const templatePath = path.join(__dirname, 'template.html');
+        const variables = {
+            rootPath: config.rootPath
+        };
+        const html = await renderTemplate(templatePath, variables);
+        res.send(html);
+    });
+    router.post('/', config.express.json(), deploy(config));
 
     router.get('/uptime', uptime);
-    router.post('/', config.express.json(), deploy(config));
+
+    router.use(config.express.static(path.join(__dirname, 'public')));
 
     return router;
 }
@@ -111,3 +125,4 @@ async function getGitRepoPath(config) {
         throw error;
     }
 }
+

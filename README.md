@@ -20,6 +20,7 @@ const app = express();
 app.use('/_deploy', ensureAuthed, createDeployMiddleware({
     express: app,
     serviceName: 'your-service-name',  // Required: systemd service name
+    rootPath: '/_deploy' // Must be the same as the first app.use param
     folderPath: '/path/to/your/project', // Optional: defaults to process.cwd()
     includeDev: false,                 // Optional: include dev dependencies
     runBuild: false,                   // Optional: run npm run build after install

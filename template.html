@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Deploy</title>
-    <link href="/deploy/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet">
-    <script src="/deploy/vue.min.js"></script>
+    <link href="{{rootPath}}/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <script src="{{rootPath}}/vue.min.js"></script>
     <style>
         .container-small {
             max-width: 500px;
@@ -130,7 +130,7 @@ new Vue({
             this.triggered = true;
             this.step1.loading = true;
 
-            fetch('/_deploy', {
+            fetch('{{rootPath}}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -159,7 +159,7 @@ new Vue({
         runHealthcheck(retryCount = 0) {
             this.step2.loading = true;
 
-            fetch('/_deploy/uptime')
+            fetch('{{rootPath}}/uptime')
                 .then(response => response.json())
                 .then(res => {
                     console.log("uptime", res);
@@ -193,3 +193,4 @@ new Vue({
 
 </body>
 </html>
+

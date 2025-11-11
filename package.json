@@ -1,11 +1,11 @@
 {
   "name": "@kiza/deploy",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Express deploy page",
   "main": "deploy.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node example.js"
+    "dev": "nodemon example.js"
   },
   "repository": {
     "type": "git",

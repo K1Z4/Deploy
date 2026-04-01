@@ -62,3 +62,8 @@ app.listen(3000);
 - Git repository with HTTPS access
 - sudo privileges for service restart
 
+## Publish package
+
+```bash
+npm publish --access public
+```

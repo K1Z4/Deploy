@@ -70,10 +70,10 @@
             </div>
 
             <div class="d-flex mb-3">
-                <div v-if="!step2.loading && step2.success">
+                <div v-if="step2.started && !step2.loading && step2.success">
                     <i class="fa-solid fa-circle-check text-success fa-2x"></i>
                 </div>
-                <div v-if="!step2.loading && !step2.success">
+                <div v-if="step2.started && !step2.loading && !step2.success">
                     <i class="fa-solid fa-circle-xmark text-danger fa-2x"></i>
                 </div>
                 <div v-if="step2.loading">
@@ -84,7 +84,7 @@
 
                 <h2 class="ml-2">Step 2: Restart</h2>
             </div>
-            <div v-if="!step2.loading">
+            <div v-if="step2.started && !step2.loading">
                 <div v-if="step2.success" class="alert alert-success" role="alert">
                     <h4 class="alert-heading">Success!</h4>
                     <p>Restart was successful.</p>
@@ -120,6 +120,7 @@ new Vue({
             stdout: '',
         },
         step2: {
+            started: false,
             loading: false,
             success: false,
             output: '',
@@ -129,6 +130,7 @@ new Vue({
         startDeploy() {
             this.triggered = true;
             this.step1.loading = true;
+            this.step2 = { started: false, loading: false, success: false, output: '' };
 
             fetch('{{rootPath}}', {
                 method: 'POST',
@@ -157,6 +159,7 @@ new Vue({
             });
         },
         runHealthcheck(retryCount = 0) {
+            this.step2.started = true;
             this.step2.loading = true;
 
             fetch('{{rootPath}}/uptime')
@@ -168,8 +171,6 @@ new Vue({
                         this.step2.success = true;
                         this.step2.output = res;
                     } else {
-                        this.step2.loading = false;
-                        this.step2.success = false;
                         this.step2.output = "Uptime is too high: " + res.uptime;
                         throw new Error("Uptime is too high"); // So that we can retry
                     }

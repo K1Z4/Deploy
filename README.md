@@ -64,6 +64,9 @@ app.listen(3000);
 
 ## Publish package
 
+Ensure to bump version in package.json
+
 ```bash
+npm login
 npm publish --access public
 ```
